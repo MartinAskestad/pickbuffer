@@ -38,7 +38,7 @@ def FormatMenuItem(file_path: string, max_width: number): string
   return $"{filename} {temp}"
 enddef
 
-export def PickBuffer()
+export def PickBuffer(qmods: string)
   var filter_cmd: string = 'v:val.name != ""'
   var buf_list: list<dict<any>> = filter(getbufinfo({ buflisted: true }), filter_cmd)
   sort(buf_list, 'SortLastUsed')
@@ -62,11 +62,21 @@ export def PickBuffer()
       endif
 
       var buf = buffers[result - 1]
-      var bnr = bufwinnr(buf)
-      if bnr >= 0
-        execute $":{bnr} wincmd w"
+      var w: list<number> = win_findbuf(bufnr(buf))
+      if empty(w)
+        if &modified || &buftype != ''
+          execute $"{qmods} split {buf}"
+        else
+          var edit_cmd: string = 'confirm'
+          if qmods != ''
+            edit_cmd ..= $" {qmods} split"
+          else
+            edit_cmd ..= " edit"
+          endif
+          execute $"{edit_cmd} {buf}"
+        endif
       else
-        execute $"b {buf}"
+        win_gotoid(w[0])
       endif
       },
   }
